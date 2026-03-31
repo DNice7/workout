@@ -1,0 +1,876 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Workout">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<link rel="apple-touch-icon" href="icons/icon-192.png">
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#0a0a0a">
+<title>Workout</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0a0a0a;
+    --surface: #141414;
+    --surface2: #1c1c1c;
+    --border: rgba(255,255,255,0.07);
+    --border2: rgba(255,255,255,0.12);
+    --text: #f0f0f0;
+    --muted: #666;
+    --muted2: #444;
+    --accent: #d4f544;
+    --accent-dim: rgba(212,245,68,0.12);
+    --accent-dim2: rgba(212,245,68,0.06);
+    --red: #ff5c5c;
+    --font-head: 'DM Mono', monospace;
+    --font-body: 'DM Sans', sans-serif;
+    --safe-top: env(safe-area-inset-top, 0px);
+    --safe-bottom: env(safe-area-inset-bottom, 0px);
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--font-body);
+    min-height: 100dvh;
+    overflow-x: hidden;
+  }
+
+  /* SCREENS */
+  .screen { display: none; min-height: 100dvh; flex-direction: column; }
+  .screen.active { display: flex; }
+
+  /* HOME SCREEN */
+  #home {
+    padding: calc(var(--safe-top) + 60px) 24px calc(var(--safe-bottom) + 32px);
+    justify-content: space-between;
+  }
+
+  .home-header { margin-bottom: 8px; }
+  .home-eyebrow {
+    font-family: var(--font-head);
+    font-size: 10px;
+    letter-spacing: 0.15em;
+    color: var(--accent);
+    text-transform: uppercase;
+    margin-bottom: 10px;
+  }
+  .home-title {
+    font-family: var(--font-head);
+    font-size: 32px;
+    font-weight: 500;
+    line-height: 1.1;
+    color: var(--text);
+  }
+  .home-subtitle {
+    font-size: 14px;
+    color: var(--muted);
+    margin-top: 8px;
+    font-weight: 300;
+  }
+
+  .workout-cards { display: flex; flex-direction: column; gap: 12px; margin: 32px 0; }
+
+  .workout-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 20px;
+    cursor: pointer;
+    transition: border-color 0.2s, background 0.2s;
+    position: relative;
+    overflow: hidden;
+    -webkit-user-select: none;
+  }
+  .workout-card:active { background: var(--surface2); border-color: var(--border2); }
+  .workout-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, var(--accent), transparent);
+    opacity: 0;
+    transition: opacity 0.2s;
+  }
+  .workout-card:active::before { opacity: 1; }
+
+  .card-top { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 14px; }
+  .card-label {
+    font-family: var(--font-head);
+    font-size: 10px;
+    letter-spacing: 0.12em;
+    color: var(--accent);
+    text-transform: uppercase;
+  }
+  .card-duration {
+    font-family: var(--font-head);
+    font-size: 11px;
+    color: var(--muted);
+    background: var(--surface2);
+    padding: 4px 10px;
+    border-radius: 20px;
+    border: 1px solid var(--border);
+  }
+  .card-title {
+    font-family: var(--font-head);
+    font-size: 20px;
+    font-weight: 500;
+    margin-bottom: 6px;
+    line-height: 1.1;
+  }
+  .card-desc {
+    font-size: 13px;
+    color: var(--muted);
+    font-weight: 300;
+    margin-bottom: 14px;
+    line-height: 1.4;
+  }
+  .card-muscles {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 5px;
+  }
+  .pill {
+    font-size: 10px;
+    padding: 3px 9px;
+    border-radius: 20px;
+    border: 1px solid var(--border2);
+    color: var(--muted);
+    font-family: var(--font-head);
+    letter-spacing: 0.04em;
+  }
+  .pill.accent { border-color: rgba(212,245,68,0.25); color: var(--accent); background: var(--accent-dim2); }
+
+  .home-footer {
+    font-size: 12px;
+    color: var(--muted2);
+    text-align: center;
+    font-family: var(--font-head);
+    letter-spacing: 0.05em;
+  }
+
+  /* WORKOUT SCREEN */
+  #workout {
+    padding-bottom: calc(var(--safe-bottom) + 80px);
+  }
+
+  .workout-header {
+    padding: calc(var(--safe-top) + 16px) 20px 16px;
+    background: var(--bg);
+    border-bottom: 1px solid var(--border);
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .back-btn {
+    width: 36px; height: 36px;
+    border: 1px solid var(--border2);
+    border-radius: 10px;
+    background: var(--surface);
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer;
+    flex-shrink: 0;
+    color: var(--text);
+    font-size: 16px;
+  }
+  .back-btn:active { background: var(--surface2); }
+  .header-info { flex: 1; }
+  .header-label {
+    font-family: var(--font-head);
+    font-size: 9px;
+    letter-spacing: 0.15em;
+    color: var(--accent);
+    text-transform: uppercase;
+    margin-bottom: 2px;
+  }
+  .header-title {
+    font-family: var(--font-head);
+    font-size: 17px;
+    font-weight: 500;
+  }
+
+  .progress-bar-wrap {
+    padding: 0 20px 16px;
+    background: var(--bg);
+    border-bottom: 1px solid var(--border);
+  }
+  .progress-label {
+    font-family: var(--font-head);
+    font-size: 10px;
+    color: var(--muted);
+    letter-spacing: 0.08em;
+    margin-bottom: 6px;
+    display: flex;
+    justify-content: space-between;
+  }
+  .progress-track {
+    height: 3px;
+    background: var(--surface2);
+    border-radius: 2px;
+    overflow: hidden;
+  }
+  .progress-fill {
+    height: 100%;
+    background: var(--accent);
+    border-radius: 2px;
+    transition: width 0.4s ease;
+  }
+
+  .workout-content { padding: 20px; flex: 1; }
+
+  .warmup-card {
+    background: var(--accent-dim2);
+    border: 1px solid rgba(212,245,68,0.15);
+    border-radius: 14px;
+    padding: 14px 16px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 24px;
+  }
+  .warmup-tag {
+    font-family: var(--font-head);
+    font-size: 9px;
+    letter-spacing: 0.12em;
+    color: var(--accent);
+    text-transform: uppercase;
+    margin-bottom: 4px;
+  }
+  .warmup-name { font-size: 14px; font-weight: 500; }
+  .warmup-tip { font-size: 12px; color: var(--muted); margin-top: 2px; }
+  .warmup-dur {
+    font-family: var(--font-head);
+    font-size: 20px;
+    color: var(--accent);
+    font-weight: 500;
+  }
+
+  .section-header {
+    font-family: var(--font-head);
+    font-size: 9px;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 10px;
+    margin-top: 24px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .ex-cards { display: flex; flex-direction: column; gap: 10px; }
+
+  .ex-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    overflow: hidden;
+    transition: border-color 0.15s;
+  }
+  .ex-card.all-done { opacity: 0.5; }
+
+  .ex-card-top {
+    padding: 14px 16px 10px;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 12px;
+    cursor: pointer;
+  }
+  .ex-card-left { flex: 1; }
+  .ex-num {
+    font-family: var(--font-head);
+    font-size: 9px;
+    color: var(--muted);
+    letter-spacing: 0.1em;
+    margin-bottom: 4px;
+  }
+  .ex-name {
+    font-size: 15px;
+    font-weight: 500;
+    line-height: 1.2;
+    margin-bottom: 4px;
+  }
+  .ex-muscle {
+    font-family: var(--font-head);
+    font-size: 10px;
+    color: var(--accent);
+    letter-spacing: 0.05em;
+  }
+  .ex-sets-badge {
+    font-family: var(--font-head);
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text);
+    background: var(--surface2);
+    padding: 6px 12px;
+    border-radius: 10px;
+    border: 1px solid var(--border2);
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+
+  /* WEIGHT INPUT */
+  .ex-weight-row {
+    padding: 0 16px 12px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .weight-label {
+    font-family: var(--font-head);
+    font-size: 10px;
+    color: var(--muted);
+    letter-spacing: 0.06em;
+    white-space: nowrap;
+  }
+  .weight-input-wrap {
+    display: flex;
+    align-items: center;
+    gap: 0;
+    background: var(--surface2);
+    border: 1px solid var(--border2);
+    border-radius: 9px;
+    overflow: hidden;
+  }
+  .weight-btn {
+    width: 32px; height: 32px;
+    background: transparent;
+    border: none;
+    color: var(--text);
+    font-size: 17px;
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer;
+    font-family: var(--font-head);
+    flex-shrink: 0;
+    transition: background 0.1s;
+  }
+  .weight-btn:active { background: var(--border2); }
+  .weight-field {
+    width: 64px;
+    background: transparent;
+    border: none;
+    color: var(--text);
+    font-family: var(--font-head);
+    font-size: 13px;
+    text-align: center;
+    padding: 0;
+    height: 32px;
+    outline: none;
+    -moz-appearance: textfield;
+  }
+  .weight-field::-webkit-outer-spin-button,
+  .weight-field::-webkit-inner-spin-button { -webkit-appearance: none; }
+  .weight-unit {
+    font-family: var(--font-head);
+    font-size: 10px;
+    color: var(--muted);
+    padding-right: 10px;
+  }
+
+  /* SET DOTS */
+  .ex-sets-row {
+    padding: 0 16px 14px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .sets-label {
+    font-family: var(--font-head);
+    font-size: 10px;
+    color: var(--muted);
+    letter-spacing: 0.06em;
+    margin-right: 2px;
+  }
+  .set-dot {
+    width: 32px; height: 32px;
+    border-radius: 9px;
+    border: 1.5px solid var(--border2);
+    background: transparent;
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer;
+    transition: all 0.15s;
+    font-family: var(--font-head);
+    font-size: 11px;
+    color: var(--muted);
+    user-select: none;
+    -webkit-user-select: none;
+  }
+  .set-dot.done {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: var(--bg);
+    font-weight: 500;
+  }
+  .set-dot:active { opacity: 0.7; }
+
+  .ex-tip-row {
+    padding: 0 16px 14px;
+    font-size: 12px;
+    color: var(--muted);
+    line-height: 1.5;
+    font-weight: 300;
+    border-top: 1px solid var(--border);
+    padding-top: 10px;
+    display: none;
+  }
+  .ex-tip-row.open { display: block; }
+
+  .note-card {
+    background: var(--accent-dim2);
+    border: 1px solid rgba(212,245,68,0.12);
+    border-radius: 14px;
+    padding: 14px 16px;
+    margin-top: 24px;
+    font-size: 13px;
+    color: rgba(212,245,68,0.7);
+    line-height: 1.6;
+    font-weight: 300;
+  }
+  .note-card strong { color: var(--accent); font-weight: 500; }
+
+  .finish-btn {
+    position: fixed;
+    bottom: calc(var(--safe-bottom) + 24px);
+    left: 20px; right: 20px;
+    background: var(--accent);
+    color: var(--bg);
+    font-family: var(--font-head);
+    font-size: 13px;
+    font-weight: 500;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    border: none;
+    border-radius: 14px;
+    padding: 16px;
+    cursor: pointer;
+    text-align: center;
+    z-index: 20;
+    transition: opacity 0.15s;
+  }
+  .finish-btn:active { opacity: 0.85; }
+</style>
+</head>
+<body>
+
+<!-- HOME -->
+<div id="home" class="screen active">
+  <div>
+    <div class="home-header">
+      <div class="home-eyebrow">Full Body · Kracht & Stabiliteit</div>
+      <div class="home-title">Kies je<br>workout</div>
+      <div class="home-subtitle">3 inwisselbare full body workouts · ~55 min</div>
+    </div>
+
+    <div class="workout-cards">
+      <div class="workout-card" onclick="openWorkout(0)">
+        <div class="card-top">
+          <div class="card-label">Workout A</div>
+          <div class="card-duration">55 min</div>
+        </div>
+        <div class="card-title">Klassieke kracht</div>
+        <div class="card-desc">Machine en barbell compounds op 3×12. Leg press, bench, row als kern.</div>
+        <div class="card-muscles">
+          <span class="pill accent">Machine focus</span>
+          <span class="pill">Quads</span><span class="pill">Hamstrings</span><span class="pill">Borst</span>
+          <span class="pill">Rug</span><span class="pill">Schouders</span><span class="pill">Biceps</span>
+          <span class="pill">Core</span>
+        </div>
+      </div>
+
+      <div class="workout-card" onclick="openWorkout(1)">
+        <div class="card-top">
+          <div class="card-label">Workout B</div>
+          <div class="card-duration">55 min</div>
+        </div>
+        <div class="card-title">Stabiliteit & kracht</div>
+        <div class="card-desc">Dumbbells, pull-ups en machine leg curl. Balans en enkelvoudige stabiliteit.</div>
+        <div class="card-muscles">
+          <span class="pill accent">Dumbbell focus</span>
+          <span class="pill">Quads</span><span class="pill">Hamstrings</span><span class="pill">Borst</span>
+          <span class="pill">Rug</span><span class="pill">Schouders</span><span class="pill">Biceps</span>
+          <span class="pill">Triceps</span><span class="pill">Core</span>
+        </div>
+      </div>
+
+      <div class="workout-card" onclick="openWorkout(2)">
+        <div class="card-top">
+          <div class="card-label">Workout C</div>
+          <div class="card-duration">55 min</div>
+        </div>
+        <div class="card-title">Unilateraal & functioneel</div>
+        <div class="card-desc">Eén kant tegelijk. Onthult en corrigeert krachtsverschillen — ideaal voor hardlopers.</div>
+        <div class="card-muscles">
+          <span class="pill accent">Unilateraal</span>
+          <span class="pill">Quads</span><span class="pill">Hamstrings</span><span class="pill">Borst</span>
+          <span class="pill">Rug</span><span class="pill">Schouders</span><span class="pill">Biceps</span>
+          <span class="pill">Triceps</span><span class="pill">Core</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="home-footer">Tik op een oefening voor uitleg · sets aanduiden per cirkel</div>
+</div>
+
+<!-- WORKOUT SCREEN -->
+<div id="workout" class="screen">
+  <div class="workout-header">
+    <div class="back-btn" onclick="goHome()">←</div>
+    <div class="header-info">
+      <div class="header-label" id="wk-label">Workout A</div>
+      <div class="header-title" id="wk-title">Klassieke kracht</div>
+    </div>
+  </div>
+  <div class="progress-bar-wrap">
+    <div class="progress-label">
+      <span>Sets voltooid</span>
+      <span id="progress-text">0 / 0</span>
+    </div>
+    <div class="progress-track"><div class="progress-fill" id="progress-fill" style="width:0%"></div></div>
+  </div>
+  <div class="workout-content" id="workout-content"></div>
+  <button class="finish-btn" onclick="goHome()">← Terug naar overzicht</button>
+</div>
+
+<script>
+const workouts = [
+  {
+    label: "Workout A",
+    title: "Klassieke kracht",
+    warmup: { name: "Loopband of fiets", tip: "Lichte intensiteit, gewrichten opwarmen" },
+    note: "<strong>Rust:</strong> 2–3 min na leg press. 90 sec na de overige oefeningen.",
+    sections: [
+      {
+        name: "Benen",
+        exercises: [
+          { name: "Machine leg press", muscle: "Quads", sets: 3, reps: 12, defaultWeight: 91, tip: "Voeten schouderbreedte op de plaat. Knieën volgen de teen, niet volledig strekken bovenaan." },
+          { name: "Romanian deadlift", muscle: "Hamstrings", sets: 3, reps: 12, defaultWeight: 20, tip: "Rug recht, heupen naar achter, stretch in de hamstrings voelen. Dumbbells of stang langs de benen." }
+        ]
+      },
+      {
+        name: "Bovenlichaam — duw",
+        exercises: [
+          { name: "Barbell bench press", muscle: "Borst · Triceps", sets: 3, reps: 12, defaultWeight: 17.5, tip: "Schouderbladen samen, voeten op de grond, gecontroleerde neergaande beweging." },
+          { name: "Dumbbell overhead press", muscle: "Schouders · Triceps", sets: 3, reps: 12, defaultWeight: 12, tip: "Per dumbbell. Ellebogen voor het lichaam, gecontroleerd persen." }
+        ]
+      },
+      {
+        name: "Bovenlichaam — trek",
+        exercises: [
+          { name: "Dumbbell row (Pendlay-stijl)", muscle: "Rug · Biceps", sets: 3, reps: 12, defaultWeight: 16, tip: "Per dumbbell. Torso horizontaal, elleboog hoog trekken — maximale rugactivatie." },
+          { name: "Barbell curl", muscle: "Biceps", sets: 3, reps: 12, defaultWeight: 6.25, tip: "Gewicht = stang + schijven per kant. Ellebogen strak langs het lichaam, geen slingerbeweging." }
+        ]
+      },
+      {
+        name: "Core",
+        exercises: [
+          { name: "Plank met schouder tap", muscle: "Core", sets: 3, reps: 12, defaultWeight: 0, tip: "Heupen stabiel houden terwijl je tikt — anti-rotatie kracht. Geen gewicht nodig." }
+        ]
+      }
+    ]
+  },
+  {
+    label: "Workout B",
+    title: "Stabiliteit & kracht",
+    warmup: { name: "Roeimachine", tip: "Rug en benen tegelijk opwarmen" },
+    note: "<strong>Let op:</strong> Rust 2 min na split squat en machine leg curl. 90 sec na de overige oefeningen.",
+    sections: [
+      {
+        name: "Benen",
+        exercises: [
+          { name: "Bulgaarse split squat", muscle: "Quads", sets: 3, reps: 12, defaultWeight: 0, tip: "Achterste voet op bank — maximale enkelvoudige beenstabiliteit, knie volgt de teen. Gewicht = per dumbbell." },
+          { name: "Machine leg curl", muscle: "Hamstrings", sets: 3, reps: 12, defaultWeight: 55, tip: "Gecontroleerd omlaag, volledig strekken onderaan. Één van de beste hamstring-oefeningen voor hardlopers." }
+        ]
+      },
+      {
+        name: "Bovenlichaam — duw",
+        exercises: [
+          { name: "Incline dumbbell press", muscle: "Borst · Triceps", sets: 3, reps: 12, defaultWeight: 0, tip: "30–45° helling, dumbbells geven extra bewegingsvrijheid per kant. Gewicht = per dumbbell." },
+          { name: "Arnold press", muscle: "Schouders", sets: 3, reps: 12, defaultWeight: 12, tip: "Per dumbbell, zittend. Draai de handpalmen tijdens het persen — traint schouder van alle hoeken." }
+        ]
+      },
+      {
+        name: "Bovenlichaam — trek",
+        exercises: [
+          { name: "Pull-ups (of gewogen)", muscle: "Rug · Biceps", sets: 3, reps: 12, defaultWeight: 0, tip: "Volledig strekken onderaan, geen kipping — pure rugkracht. Gewicht = extra gewicht als je dat gebruikt." },
+          { name: "Hammer curl", muscle: "Biceps", sets: 3, reps: 12, defaultWeight: 0, tip: "Neutrale greep, per dumbbell. Traint ook brachialis — meer dikte in de arm." },
+          { name: "Overhead tricep extension", muscle: "Triceps", sets: 3, reps: 12, defaultWeight: 0, tip: "Eén zware dumbbell boven het hoofd, ellebogen stabiel houden." }
+        ]
+      },
+      {
+        name: "Core",
+        exercises: [
+          { name: "Dead bug", muscle: "Core", sets: 3, reps: 12, defaultWeight: 0, tip: "Rug plat op de grond, arm en tegenovergesteld been strekken — lumbale stabiliteit. Per kant." }
+        ]
+      }
+    ]
+  },
+  {
+    label: "Workout C",
+    title: "Unilateraal & functioneel",
+    warmup: { name: "Dynamische stretch", tip: "Leg swings, heupflexoren, schouders — gewrichten voorbereiden op zware belasting" },
+    note: "<strong>Unilateraal:</strong> Eén kant tegelijk onthult en corrigeert krachtsverschillen tussen links en rechts — belangrijk voor hardlopen.",
+    sections: [
+      {
+        name: "Benen",
+        exercises: [
+          { name: "Hack squat of front squat", muscle: "Quads", sets: 3, reps: 12, defaultWeight: 0, tip: "Torso rechtop — maximale quad-activatie, minder rugbelasting dan back squat." },
+          { name: "Single-leg Romanian deadlift", muscle: "Hamstrings", sets: 3, reps: 12, defaultWeight: 0, tip: "Dumbbell in tegenovergestelde hand, vrije been naar achter — hamstring én balans. Gewicht = per dumbbell." }
+        ]
+      },
+      {
+        name: "Bovenlichaam — duw",
+        exercises: [
+          { name: "Dumbbell floor press (op bench)", muscle: "Borst · Triceps · Middendeel borst", sets: 3, reps: 12, defaultWeight: 0, tip: "Lig op een vlakke bench, dumbbells naast de borst. Persen tot volledige strekking. Beperkt bewegingsbereik beschermt schouder, maximale borst- en tricep-activatie." },
+          { name: "Single-arm dumbbell press (staand)", muscle: "Schouders · Core", sets: 3, reps: 12, defaultWeight: 0, tip: "Eén arm persen traint de core mee als stabilisator — functionele schouderkracht. Gewicht = per arm." }
+        ]
+      },
+      {
+        name: "Bovenlichaam — trek",
+        exercises: [
+          { name: "Single-arm dumbbell row", muscle: "Rug · Biceps", sets: 3, reps: 12, defaultWeight: 0, tip: "Knie op bank, rug horizontaal — zware belasting per kant mogelijk zonder compensatie. Gewicht = per arm." },
+          { name: "Incline dumbbell curl", muscle: "Biceps", sets: 3, reps: 12, defaultWeight: 0, tip: "Bank op 45°, volledige rek onderaan — maximale bicep-activatie. Gewicht = per dumbbell." },
+          { name: "Close-grip bench press", muscle: "Triceps · Borst", sets: 3, reps: 12, defaultWeight: 0, tip: "Greep op schouderbreedte, ellebogen dicht langs het lichaam." }
+        ]
+      },
+      {
+        name: "Core",
+        exercises: [
+          { name: "Pallof press (cable of band)", muscle: "Core", sets: 3, reps: 12, defaultWeight: 0, tip: "Zijdelings aan de cable staan, druk recht voor je uit — anti-rotatie kracht. Per kant." }
+        ]
+      }
+    ]
+  }
+];
+
+// State: setsDone[wIdx][exIdx] = array of booleans, weights[wIdx][exIdx] = number
+let setsDone = {};
+let weights = {};
+
+function loadState() {
+  try {
+    const sd = localStorage.getItem('workout_sets');
+    const wt = localStorage.getItem('workout_weights');
+    if (sd) setsDone = JSON.parse(sd);
+    if (wt) weights = JSON.parse(wt);
+  } catch(e) {}
+}
+
+function saveState() {
+  try {
+    localStorage.setItem('workout_sets', JSON.stringify(setsDone));
+    localStorage.setItem('workout_weights', JSON.stringify(weights));
+  } catch(e) {}
+}
+
+function getSetsDone(wIdx, exIdx) {
+  if (!setsDone[wIdx]) setsDone[wIdx] = {};
+  if (!setsDone[wIdx][exIdx]) {
+    const numSets = workouts[wIdx].sections.flatMap(s => s.exercises)[exIdx]?.sets || 3;
+    setsDone[wIdx][exIdx] = new Array(numSets).fill(false);
+  }
+  return setsDone[wIdx][exIdx];
+}
+
+function getWeight(wIdx, exIdx) {
+  if (!weights[wIdx]) weights[wIdx] = {};
+  if (weights[wIdx][exIdx] === undefined) {
+    const ex = workouts[wIdx].sections.flatMap(s => s.exercises)[exIdx];
+    weights[wIdx][exIdx] = ex ? ex.defaultWeight : 0;
+  }
+  return weights[wIdx][exIdx];
+}
+
+function totalSets(w) {
+  return w.sections.reduce((s, sec) => s + sec.exercises.reduce((a, ex) => a + ex.sets, 0), 0);
+}
+
+function countDoneSets(wIdx) {
+  let count = 0;
+  if (!setsDone[wIdx]) return 0;
+  Object.values(setsDone[wIdx]).forEach(arr => {
+    if (Array.isArray(arr)) count += arr.filter(Boolean).length;
+  });
+  return count;
+}
+
+function allSetsOfExDone(wIdx, exIdx) {
+  const arr = getSetsDone(wIdx, exIdx);
+  return arr.every(Boolean);
+}
+
+function updateProgress(wIdx) {
+  const total = totalSets(workouts[wIdx]);
+  const done = countDoneSets(wIdx);
+  document.getElementById('progress-fill').style.width = (done / total * 100) + '%';
+  document.getElementById('progress-text').textContent = done + ' / ' + total;
+
+  // Update card appearance
+  document.querySelectorAll('.ex-card').forEach(card => {
+    const wi = parseInt(card.dataset.wIdx);
+    const ei = parseInt(card.dataset.exIdx);
+    card.classList.toggle('all-done', allSetsOfExDone(wi, ei));
+  });
+}
+
+function toggleSet(wIdx, exIdx, setIdx, e) {
+  e.stopPropagation();
+  const arr = getSetsDone(wIdx, exIdx);
+  arr[setIdx] = !arr[setIdx];
+  setsDone[wIdx][exIdx] = arr;
+  saveState();
+
+  // Update this dot
+  const dot = document.querySelector(`.set-dot[data-w="${wIdx}"][data-e="${exIdx}"][data-s="${setIdx}"]`);
+  if (dot) {
+    dot.classList.toggle('done', arr[setIdx]);
+    dot.textContent = arr[setIdx] ? '✓' : (setIdx + 1);
+  }
+  updateProgress(wIdx);
+}
+
+function setWeight(wIdx, exIdx, value) {
+  if (!weights[wIdx]) weights[wIdx] = {};
+  const val = parseFloat(value) || 0;
+  weights[wIdx][exIdx] = val;
+  saveState();
+}
+
+function adjustWeight(wIdx, exIdx, delta, e) {
+  e.stopPropagation();
+  const current = getWeight(wIdx, exIdx);
+  const step = delta > 0 ? getStep(current) : -getStep(current - 0.01);
+  const newVal = Math.max(0, Math.round((current + step) * 100) / 100);
+  weights[wIdx][exIdx] = newVal;
+  saveState();
+  const field = document.querySelector(`.weight-field[data-w="${wIdx}"][data-e="${exIdx}"]`);
+  if (field) field.value = newVal % 1 === 0 ? newVal : newVal.toFixed(2);
+}
+
+function getStep(val) {
+  if (val < 5) return 0.25;
+  if (val < 20) return 1.25;
+  if (val < 60) return 2.5;
+  return 5;
+}
+
+function toggleTip(cardEl, e) {
+  if (e) e.stopPropagation();
+  const tip = cardEl.querySelector('.ex-tip-row');
+  if (tip) tip.classList.toggle('open');
+}
+
+let currentWIdx = 0;
+
+function openWorkout(idx) {
+  currentWIdx = idx;
+  const w = workouts[idx];
+  document.getElementById('wk-label').textContent = w.label;
+  document.getElementById('wk-title').textContent = w.title;
+
+  let html = `
+    <div class="warmup-card">
+      <div class="warmup-left">
+        <div class="warmup-tag">Warming-up</div>
+        <div class="warmup-name">${w.warmup.name}</div>
+        <div class="warmup-tip">${w.warmup.tip}</div>
+      </div>
+      <div class="warmup-dur">5 min</div>
+    </div>
+  `;
+
+  let globalExIdx = 0;
+  w.sections.forEach(sec => {
+    html += `<div class="section-header">${sec.name}</div><div class="ex-cards">`;
+    sec.exercises.forEach(ex => {
+      const gIdx = globalExIdx;
+      const isDoneAll = allSetsOfExDone(idx, gIdx);
+      const arr = getSetsDone(idx, gIdx);
+      const wt = getWeight(idx, gIdx);
+      const wtDisplay = wt % 1 === 0 ? wt : wt.toFixed(2);
+      const showWeight = ex.defaultWeight > 0 || (weights[idx] && weights[idx][gIdx] !== undefined && weights[idx][gIdx] > 0);
+
+      // Set dots HTML
+      let dotsHtml = '';
+      for (let s = 0; s < ex.sets; s++) {
+        const done = arr[s];
+        dotsHtml += `<div class="set-dot ${done ? 'done' : ''}" 
+          data-w="${idx}" data-e="${gIdx}" data-s="${s}"
+          onclick="toggleSet(${idx}, ${gIdx}, ${s}, event)">${done ? '✓' : (s+1)}</div>`;
+      }
+
+      html += `
+        <div class="ex-card ${isDoneAll ? 'all-done' : ''}" 
+          data-w-idx="${idx}" data-ex-idx="${gIdx}"
+          data-w="${idx}" data-e="${gIdx}">
+          <div class="ex-card-top" onclick="toggleTip(this.closest('.ex-card'), event)">
+            <div class="ex-card-left">
+              <div class="ex-num">0${gIdx + 1}</div>
+              <div class="ex-name">${ex.name}</div>
+              <div class="ex-muscle">${ex.muscle}</div>
+            </div>
+            <div class="ex-sets-badge">${ex.sets} × ${ex.reps}</div>
+          </div>
+          <div class="ex-weight-row">
+            <span class="weight-label">Gewicht</span>
+            <div class="weight-input-wrap">
+              <button class="weight-btn" onclick="adjustWeight(${idx}, ${gIdx}, -1, event)">−</button>
+              <input class="weight-field" type="number" 
+                data-w="${idx}" data-e="${gIdx}"
+                value="${wtDisplay}" min="0" step="0.25"
+                onclick="event.stopPropagation()"
+                onchange="setWeight(${idx}, ${gIdx}, this.value)">
+              <span class="weight-unit">kg</span>
+              <button class="weight-btn" onclick="adjustWeight(${idx}, ${gIdx}, 1, event)">+</button>
+            </div>
+          </div>
+          <div class="ex-sets-row">
+            <span class="sets-label">Sets</span>
+            ${dotsHtml}
+          </div>
+          <div class="ex-tip-row">${ex.tip}</div>
+        </div>
+      `;
+      globalExIdx++;
+    });
+    html += `</div>`;
+  });
+
+  html += `<div class="note-card">${w.note}</div>`;
+  document.getElementById('workout-content').innerHTML = html;
+
+  const total = totalSets(w);
+  const done = countDoneSets(idx);
+  document.getElementById('progress-fill').style.width = (done / total * 100) + '%';
+  document.getElementById('progress-text').textContent = done + ' / ' + total;
+
+  document.getElementById('home').classList.remove('active');
+  document.getElementById('workout').classList.add('active');
+  document.getElementById('workout').scrollTop = 0;
+}
+
+function goHome() {
+  document.getElementById('workout').classList.remove('active');
+  document.getElementById('home').classList.add('active');
+  window.scrollTo(0, 0);
+}
+
+loadState();
+
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('/sw.js').catch(() => {});
+  });
+}
+</script>
+</body>
+</html>
